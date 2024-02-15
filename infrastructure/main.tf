@@ -18,7 +18,3 @@ terraform {
 provider "aws" {
   region     = var.AWS_REGION
 }
-
-provider "stripe" {
-  api_token = var.STRIPE_API_KEY
-}
