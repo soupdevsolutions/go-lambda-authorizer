@@ -1,13 +1,13 @@
 package auth
 
 import (
-	"crypto/ecdsa"
+	"fmt"
 	"log"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var key *ecdsa.PrivateKey
+var key []byte = []byte("secret")
 
 func CreateToken(username string) (string, error) {
 	jwt := jwt.NewWithClaims(
@@ -28,6 +28,7 @@ func ParseToken(token string) (string, error) {
 	jwtToken, err := jwt.ParseWithClaims(token, &User{}, func(t *jwt.Token) (interface{}, error) {
 		return key, nil
 	})
+	fmt.Println("JWT token:", jwtToken)
 	if err != nil {
 		log.Println("error while parsing JWT: ", err)
 		return "", err
@@ -37,6 +38,8 @@ func ParseToken(token string) (string, error) {
 		log.Println("invalid JWT token")
 		return "", err
 	}
+
+	fmt.Println("JWT claims:", jwtToken.Claims)
 
 	user, ok := jwtToken.Claims.(*User)
 	if !ok {

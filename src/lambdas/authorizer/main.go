@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -12,39 +13,40 @@ import (
 
 var validUsers = []string{"user1", "user2"}
 
-type AuthorizerRequest struct {
-	Token     string `json:"authorizationToken"`
-	MethodArn string `json:"methodArn"`
+type Headers struct {
+	Token string `json:"authorization"`
 }
 
-func Handle(ctx context.Context, request *AuthorizerRequest) (events.APIGatewayCustomAuthorizerResponse, error) {
-	username, err := auth.ParseToken(request.Token)
+type AuthorizerRequest struct {
+	Headers   Headers `json:"headers"`
+	MethodArn string  `json:"methodArn"`
+}
+
+func Handle(ctx context.Context, event *events.APIGatewayV2CustomAuthorizerV2Request) (*events.APIGatewayV2CustomAuthorizerSimpleResponse, error) {
+	fmt.Println("Event: ", event)
+	username, err := auth.ParseToken(event.Headers["authorization"])
 	if err != nil {
-		return events.APIGatewayCustomAuthorizerResponse{}, err
+		return &events.APIGatewayV2CustomAuthorizerSimpleResponse{}, err
 	}
+	fmt.Println("Username: ", username)
 
 	if !slices.Contains(validUsers, username) {
-		return events.APIGatewayCustomAuthorizerResponse{}, nil
+		return &events.APIGatewayV2CustomAuthorizerSimpleResponse{
+			IsAuthorized: false,
+		}, nil
 	}
 
 	// Extract the ARN data
-	arnData, err := utils.ExtractArn(request.MethodArn)
+	arnData, err := utils.ExtractArn(event.RouteArn)
 	if err != nil {
-		return events.APIGatewayCustomAuthorizerResponse{}, err
+		return &events.APIGatewayV2CustomAuthorizerSimpleResponse{
+			IsAuthorized: false,
+		}, err
 	}
+	fmt.Println("ARN data: ", arnData)
 
-	return events.APIGatewayCustomAuthorizerResponse{
-		PrincipalID: username,
-		PolicyDocument: events.APIGatewayCustomAuthorizerPolicy{
-			Version: "2012-10-17",
-			Statement: []events.IAMPolicyStatement{
-				{
-					Action:   []string{"execute-api:Invoke"},
-					Effect:   "Allow",
-					Resource: []string{arnData.String()},
-				},
-			},
-		},
+	return &events.APIGatewayV2CustomAuthorizerSimpleResponse{
+		IsAuthorized: true,
 	}, nil
 }
 
