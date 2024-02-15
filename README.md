@@ -1,7 +1,7 @@
 # go-lambda-authorizer
 A simple API Gateway Lambda authorizer written in Go.
 
-## Usage
+## Deploying
 
 ### Build
 To build the Lambda functions, you can run the Python script:
@@ -22,4 +22,22 @@ OR you can use the `just` command:
 
 ```bash
 just deploy
+```
+
+## Usage
+
+The project contains a login route (which is public), and a protected route (only accessible with an authorization header).
+
+### Login
+
+```bash
+curl -X POST https://<api-id>.execute-api.<region>.amazonaws.com/login -d '{"username": "user1"}' | jq .token
+```
+
+### Getting data
+
+Use the token returned by `/login` to access the protected route:
+
+```bash
+curl -X GET https://<api-id>.execute-api.<region>.amazonaws.com/data -H "Authorization:<token>"
 ```
